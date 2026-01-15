@@ -171,7 +171,6 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- Lấy tất cả MaTuyenXe bị ảnh hưởng
     DECLARE @affected TABLE (MaTuyenXe INT PRIMARY KEY);
     INSERT INTO @affected (MaTuyenXe)
     SELECT DISTINCT MaTuyenXe FROM inserted
@@ -187,35 +186,55 @@ BEGIN
     BEGIN
         DECLARE @DiemDi INT = (SELECT DiemDi FROM TUYEN_XE WHERE MaTuyenXe = @MaTuyenXe);
         DECLARE @DiemDen INT = (SELECT DiemDen FROM TUYEN_XE WHERE MaTuyenXe = @MaTuyenXe);
+		-- PRINT @DiemDi
+		-- PRINT @DiemDen
 
-        -- Nếu không có điểm đầu/cuối thì bỏ qua (trigger TRG_CheckTuyenXeStartEnd đã chặn)
         IF @DiemDi IS NULL OR @DiemDen IS NULL
         BEGIN
             FETCH NEXT FROM cur INTO @MaTuyenXe;
             CONTINUE;
         END
 
-        DECLARE @TinhDi NVARCHAR(50) = (SELECT d.TinhThanh FROM CHI_TIET_TUYEN_XE c JOIN DIEM_DON_TRA d ON c.MaDiem = d.MaDiem WHERE c.MaChiTietTuyenXe = @DiemDi);
-        DECLARE @TinhDen NVARCHAR(50) = (SELECT d.TinhThanh FROM CHI_TIET_TUYEN_XE c JOIN DIEM_DON_TRA d ON c.MaDiem = d.MaDiem WHERE c.MaChiTietTuyenXe = @DiemDen);
-        DECLARE @TenTuyenXe NVARCHAR(100) = @TinhDi + N' - ' + @TinhDen;
+        DECLARE @TinhDi NVARCHAR(50) = (
+            SELECT TOP 1 d.TinhThanh 
+            FROM CHI_TIET_TUYEN_XE c 
+            JOIN DIEM_DON_TRA d ON c.MaDiem = d.MaDiem 
+            WHERE c.MaDiem = @DiemDi
+        );
 
+        DECLARE @TinhDen NVARCHAR(50) = (
+            SELECT TOP 1 d.TinhThanh 
+            FROM CHI_TIET_TUYEN_XE c 
+            JOIN DIEM_DON_TRA d ON c.MaDiem = d.MaDiem 
+            WHERE c.MaDiem = @DiemDen
+        );
+
+        DECLARE @TenTuyenXe NVARCHAR(100) = ISNULL(@TinhDi, N'Không xác định') + N' - ' + ISNULL(@TinhDen, N'Không xác định');
+		-- PRINT @TenTuyenXe
         DECLARE @TotalMinutes INT = 0;
-        DECLARE @Current INT = @DiemDi;
+        DECLARE @Current INT = (SELECT MaChiTietTuyenXe FROM CHI_TIET_TUYEN_XE where MaDiem = @DiemDi and  MaTuyenXe = @MaTuyenXe) ;
 
+        -- Duyệt toàn bộ chuỗi từ DiemDi đến DiemDen
         WHILE @Current IS NOT NULL
         BEGIN
             DECLARE @ThoiGian INT, @Next INT;
-            SELECT @ThoiGian = ThoiGianDiChuyenTuDiemTruoc, @Next = DiemSau 
-            FROM CHI_TIET_TUYEN_XE WHERE MaChiTietTuyenXe = @Current;
-            SET @TotalMinutes = @TotalMinutes + ISNULL(@ThoiGian, 0);
+            SELECT 
+                @ThoiGian = ThoiGianDiChuyenTuDiemTruoc,
+                @Next = DiemSau
+            FROM CHI_TIET_TUYEN_XE 
+            WHERE MaChiTietTuyenXe = @Current;
+			-- PRINT @ThoiGian
+            SET @TotalMinutes += ISNULL(@ThoiGian, 0);
             SET @Current = @Next;
         END
 
         DECLARE @Hours INT = CEILING(@TotalMinutes / 60.0);
 
-        UPDATE TUYEN_XE SET 
+        UPDATE TUYEN_XE 
+        SET 
             TenTuyenXe = @TenTuyenXe,
-            ThoiGianChayDuKien = @Hours
+            ThoiGianChayDuKien = @Hours,
+            NgayCapNhatCuoi = GETDATE()
         WHERE MaTuyenXe = @MaTuyenXe;
 
         FETCH NEXT FROM cur INTO @MaTuyenXe;
