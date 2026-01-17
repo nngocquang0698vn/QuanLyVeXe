@@ -316,7 +316,7 @@ CREATE TABLE VE_XE (
 GO
 
 -- Ràng buộc bằng Trigger
--- Một vé không thể được bán cho khách hàng!
+-- Một vé không thể được bán cho NHIỀU khách hàng!
 CREATE OR ALTER TRIGGER TRG_CheckUniqueActiveSeat
 ON VE_XE
 AFTER INSERT, UPDATE
