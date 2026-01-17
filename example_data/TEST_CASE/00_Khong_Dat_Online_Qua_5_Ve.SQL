@@ -69,7 +69,7 @@ BEGIN TRANSACTION
 	('VE000028', 2, 1, 11, 'B13', N'Đã bán', '2025-09-28 16:37:51', '2025-09-28 16:37:51');
 	
 	SET IDENTITY_INSERT [dbo].[HOA_DON_MUA_VE] ON
-    -- MaNhanVienBanVe = 8 Tuc la khong dat online, dat truc tiep tai van phong
+    -- MaNhanVienBanVe = NULL Tuc la khong dat online, dat truc tiep tai van phong
 	INSERT INTO [dbo].[HOA_DON_MUA_VE] (MaHoaDon, SoDienThoai, TriGiaHoaDon, NgayLapHoaDon, TrangThai, HinhThucThanhToan, MaNhanVienBanVe, NgayTao, NgayCapNhatCuoi) VALUES
 	(6, '0905886225', 0, '2025-09-29 00:15:22', N'Đã thanh toán', N'ZaloPay', 8, '2025-09-29 00:15:22', '2025-09-29 00:15:22');
 	SET IDENTITY_INSERT [dbo].[HOA_DON_MUA_VE] OFF
